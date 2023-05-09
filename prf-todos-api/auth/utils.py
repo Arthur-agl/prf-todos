@@ -15,5 +15,5 @@ def check_pw_hash(hash, password):
     return check_password_hash(hash, password)
 
 
-def hash_pw(password):
+def generate_pw_hash(password):
     return generate_password_hash(password, method='md5')

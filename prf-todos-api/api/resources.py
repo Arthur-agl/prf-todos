@@ -1,5 +1,5 @@
 from api.models import Todo, TodoItem, User
-from api.schemas import TodoListItemSchema, TodoListSchema, UserSchema
+from api.schemas import TodoItemSchema, TodoSchema, UserSchema
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_restful import Api, Resource
@@ -24,7 +24,7 @@ class TodoItemResource(Resource):
         todo_items = db.session.scalars(
             db.select(TodoItem).filter_by(todo_id=todo_id)).all()
 
-        return TodoListItemSchema().dump(todo_items, many=True)
+        return TodoItemSchema().dump(todo_items, many=True)
 
     @login_required
     def post(self, todo_id):
@@ -36,8 +36,9 @@ class TodoItemResource(Resource):
             return "Todo not found", 404
 
         try:
-            data = TodoListItemSchema().load(request.json)
+            data = TodoItemSchema().load(request.json)
             todo_item = TodoItem(**data)
+            todo_item.todo_id = todo_id
             db.session.add(todo_item)
             db.session.commit()
         except ValidationError as err:
@@ -53,7 +54,7 @@ class TodoItemResource(Resource):
         if not (todo_id in curr_user_todos):
             return "Todo not found", 404
 
-        schema = TodoListItemSchema(partial=True, exclude=['todo_id'])
+        schema = TodoItemSchema(partial=True)
         todo_item: TodoItem = TodoItem.query.get_or_404(item_id)
 
         if not (todo_item.todo_id in curr_user_todos):
@@ -87,16 +88,18 @@ class TodoItemResource(Resource):
 
 class TodoResource(Resource):
     @login_required
-    def get(self, user_id):
+    def get(self):
+        user_id = int(current_user.get_id())
         todos = db.session.scalars(
             db.select(Todo).filter_by(user_id=user_id)).unique().all()
-        return TodoListSchema(many=True).dump(todos)
+        return TodoSchema(many=True).dump(todos)
 
     @login_required
     def post(self):
         try:
-            data = TodoListSchema().load(data=request.json)
+            data = TodoSchema().load(data=request.json)
             todo = Todo(**data)
+            todo.user_id = int(current_user.get_id())
             db.session.add(todo)
             db.session.commit()
         except ValidationError as err:
@@ -112,7 +115,7 @@ class TodoResource(Resource):
         if not (todo_id in curr_user_todos):
             return "Todo not found", 404
 
-        schema = TodoListSchema(partial=True)
+        schema = TodoSchema(partial=True)
         todo = Todo.query.get_or_404(todo_id)
         data = schema.load(data=request.json)
         for key, value in data.items():
@@ -138,7 +141,8 @@ class TodoResource(Resource):
 
 class UserResource(Resource):
     @login_required
-    def get(self, user_id):
+    def get(self):
+        user_id = int(current_user.get_id())
         user = User.query.get_or_404(user_id)
         return jsonify(user)
 
@@ -154,7 +158,8 @@ class UserResource(Resource):
         return None
 
     @login_required
-    def patch(self, user_id):
+    def patch(self):
+        user_id = int(current_user.get_id())
         schema = UserSchema(partial=True)
         user = User.query.get_or_404(user_id)
         data = schema.load(data=request.json)
@@ -165,10 +170,13 @@ class UserResource(Resource):
         return None
 
     @login_required
-    def delete(self, user_id):
+    def delete(self):
+        user_id = int(current_user.get_id())
         user = User.query.get_or_404(user_id)
+        logout_user()
         db.session.delete(user)
         db.session.commit()
+        return None
 
 
 class AuthLoginResource(Resource):
@@ -190,9 +198,8 @@ class AuthLogoutResource(Resource):
 
 api.add_resource(TodoItemResource, "/todos/<int:todo_id>/items",
                  "/todos/<int:todo_id>/items/<int:item_id>")
-api.add_resource(TodoResource, "/users/<int:user_id>/todos",
-                 "/todos", "/todos/<int:todo_id>")
-api.add_resource(UserResource, "/users", "/users/<int:user_id>")
+api.add_resource(TodoResource, "/todos", "/todos/<int:todo_id>")
+api.add_resource(UserResource, "/user")
 
 api.add_resource(AuthLoginResource, "/login")
 api.add_resource(AuthLogoutResource, "/logout")
