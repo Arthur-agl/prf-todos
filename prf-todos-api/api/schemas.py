@@ -1,5 +1,4 @@
-from marshmallow import Schema, fields, post_load
-from api.models import Todo, TodoItem
+from marshmallow import Schema, fields
 
 
 class TodoListItemSchema(Schema):
@@ -21,4 +20,5 @@ class TodoListSchema(Schema):
 class UserSchema(Schema):
     id = fields.Integer()
     username = fields.Str(required=True)
+    password = fields.Str(required=True)
     todo_lists = fields.List(fields.Nested(TodoListSchema()))

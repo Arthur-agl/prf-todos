@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from werkzeug.security import generate_password_hash
+from flask_login import UserMixin
 from prftodosapi.extensions import db
 
 
@@ -23,7 +25,16 @@ class TodoItem(db.Model):
 
 
 @dataclass
-class User(db.Model):
+class User(db.Model, UserMixin):
     id: int = db.Column(db.Integer, primary_key=True)
     username: str = db.Column(db.String, nullable=False)
+    password_hash: str = db.Column(db.String, nullable=False)
     todos = db.relationship('Todo', cascade="all, delete")
+
+    @property
+    def password(self):
+        raise AttributeError("password is not a readable attribute")
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password, method='md5')
