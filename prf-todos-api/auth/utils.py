@@ -5,7 +5,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 @login_manager.user_loader
 def load_user(user_id):
-    print("user_id: " + user_id)
     user = db.session.execute(
         db.select(User).filter_by(id=user_id)).scalar_one()
     return user or None
