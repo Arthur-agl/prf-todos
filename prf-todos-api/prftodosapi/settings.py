@@ -1,3 +1,2 @@
-# SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:admin@localhost/prftodos'
-SQLALCHEMY_DATABASE_URI = 'sqlite:///dbase.db'
+SQLALCHEMY_DATABASE_URI = 'postgresql://admin:admin@postgres:5432/prftodos'
 SECRET_KEY = 'serecret kkey'
